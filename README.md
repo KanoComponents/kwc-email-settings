@@ -1,21 +1,9 @@
 # \<kwc-email-settings\>
 
+A small component to allow users to update their email addresses.
 
-
- - What is it called?
-     - kwc-email-settings
- - What is it made out of?
-     - Describe here the contents of this component
- - What variants are needed?
-     - Variant 1:
-     - Variant 2:
-     - Variant 3:
- - How does it scale?
-     - Desktop: ...
-     - Mobile: ...
- - What style variables are in use?
-     - Style 1: ...
-     - Style 2: ...
+## TODO:
+* Implement tests to check the interactions with the component. Since the validations rely on listening for the key up, it's not clear how best these can be tested.
 
 ## Installation
 Clone this repository.

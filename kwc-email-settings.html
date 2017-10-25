@@ -1,34 +1,422 @@
 <link rel="import" href="../polymer/polymer.html">
+<link rel="import" href="../iron-flex-layout/iron-flex-layout.html">
+<link rel="import" href="../kwc-style/kwc-style.html">
+<link rel="import" href="../kwc-button/kwc-button.html">
+<link rel="import" href="../kwc-behaviours/kano-validation.html">
 
 <!--
 `kwc-email-settings`
 
+A small component to allow users to update their email addresses.
 
 @demo demo/index.html
 -->
 
 <dom-module id="kwc-email-settings">
-  <template>
-    <style>
-      :host {
-        display: block;
-      }
-    </style>
-    <h2>Hello [[prop1]]!</h2>
-  </template>
+    <template>
+        <style is="custom-style" include="input-text">
+        <style>
+            :host {
+                display: block;
+            }
+            :host h3 {
+                color: var(--color-black);
+                font-family: var(--font-heading);
+                font-size: 18px;
+                margin: 0 0 4px 0;
+                text-transform: uppercase;
+            }
+            :host p,
+            :host li {
+                font-family: var(--font-body);
+            }
+            :host > p {
+                color: var(--color-grey);
+                font-size: 16px;
+                margin: 0 0 32px 0;
+            }
+            :host .content {
+                position: relative;
+            }
+            :host form {
+                @apply --layout-vertical;
+                @apply --layout-start-justified;
+                @apply --layout-start;
+            }
+            :host input {
+                @apply var(--kwc-input-base);
+                margin-bottom: 16px;
+                width: 100%;
+            }
+            :host input[kwc-valid] {
+                border-color: var(--color-grassland);
+            }
+            :host input[kwc-invalid] {
+                border-color: var(--color-cinnabar);
+            }
+            :host .errors {
+                @apply --layout-flex-auto;
+                color: var(--color-cinnabar);
+                list-style: none;
+                margin: 16px 0 32px 0;
+                min-height: 16px;
+                padding: 0;
+            }
+            :host .error ~ .error {
+                margin-top: 8px;
+            }
+            :host .overlay {
+                @apply --layout-fit;
+                background-color: white;
+                margin: auto;
+                text-align: center;
+            }
+            :host .overlay-label {
+                color: var(--color-abbey);
+                font-size: 16px;
+                font-family: var(--font-body);
+                font-weight: bold;
+                margin: 0;
+                padding-bottom: 24px;
+            }
+            :host paper-spinner-lite {
+                display: block;
+                margin: auto;
+            }
+            :host *[hidden] {
+                display: none !important;
+            }
+        </style>
+        <h3>Email Notifications</h3>
+        <p>Your current email address is <strong>[[primaryEmail]]</strong></p>
+        <div class="content">
+            <form on-submit="_updateEmail" autocomplete="on">
+                <input id="_primaryUpdate"
+                       type="email"
+                       value="{{_primaryUpdate::input}}"
+                       on-focus="_clearErrors"
+                       on-keyup="_validatePrimaryUpdate"
+                       placeholder="Your new email"
+                       kwc-valid$="[[_inputValid(_validations._primaryUpdate, _primaryUpdate)]]"
+                       kwc-invalid$="[[_inputInvalid(_validations._primaryUpdate, _primaryUpdate)]]"
+                       required />
+                <input id="_primaryConfirmation"
+                       type="email"
+                       value="{{_primaryConfirmation::input}}"
+                       on-focus="_clearErrors"
+                       on-keyup="_validateConfirmation"
+                       placeholder="Please confirm your email"
+                       kwc-valid$="[[_inputValid(_validations._primaryConfirmation, _primaryConfirmation)]]"
+                       kwc-invalid$="[[_inputInvalid(_validations._primaryConfirmation, _primaryConfirmation)]]"
+                       required />
+                <input id="_secondaryUpdate"
+                       type="email"
+                       value="{{_secondaryUpdate::input}}"
+                       on-focus="_clearErrors"
+                       on-keyup="_validateSecondaryUpdate"
+                       kwc-valid$="[[_inputValid(_validations._secondaryUpdate, _secondaryUpdate)]]"
+                       kwc-invalid$="[[_inputInvalid(_validations._secondaryUpdate, _secondaryUpdate)]]"
+                       placeholder="Your secondary email (optional)"
+                       hidden />
+                <ul class="errors">
+                     <template is="dom-repeat" items="[[_errorMessages]]">
+                        <li class="error">[[item]]</li>
+                     </template>
+                </ul>
+                <kwc-button disabled$="[[!valid]]"
+                            type="submit"
+                            variant="tertiary"
+                            square
+                            on-tap="_updateEmail">
+                    Submit
+                </kwc-button>
+            </form>
+            <template is="dom-if" if="[[updating]]">
+                <div class="overlay loader">
+                    <p class="overlay-label">Loading...</p>
+                    <paper-spinner-lite active="[[updating]]">
+                    </paper-spinner-lite>
+                </div>
+            </template>
+            <template is="dom-if" if="[[_updateError]]">
+                <div class="overlay error">
+                    <p class="overlay-label">Sorry, something went wrong.</p>
+                    <kwc-button type="button"
+                                variant="primary"
+                                square
+                                on-tap="_reset">
+                        Try again
+                    </kwc-button>
+                </div>
+            </template>
+            <template is="dom-if" if="[[updated]]">
+                <div class="overlay success">
+                    <p class="overlay-label">Success! Please check your email to confirm the change.</p>
+                    <kwc-button type="button"
+                                variant="primary"
+                                square
+                                on-tap="_reset">
+                        Got it
+                    </kwc-button>
+                </div>
+            </template>
+        </div>
+    </template>
 
-  <script>
-    Polymer({
+    <script>
+      Polymer({
+          is: 'kwc-email-settings',
+          behaviors: [
+              Kano.Validation.Behaviour
+          ],
+          properties: {
+              /** The update error (if applicable) */
+              error: {
+                  type: String
+              },
+              /** The errors for each field in the form */
+              errors: {
+                  type: Object,
+                  value: () => {
+                      return {}
+                  }
+              },
+              /** An array of error messages computed from the errors object */
+              _errorMessages: {
+                  type: Array,
+                  computed: '_computedErrorMessages(errors.*)'
+              },
+              /** The user's current primary email address */
+              primaryEmail: {
+                  type: String,
+                  value: ''
+              },
+              /** The user's new primary email address */
+              _primaryUpdate: {
+                  type: String,
+                  value: ''
+              },
+              /** The user's new primary email address (confirmed) */
+              _primaryConfirmation: {
+                  type: String,
+                  value: ''
+              },
+              /** The user's current secondary email address */
+              _secondaryUpdate: {
+                  type: String,
+                  value: ''
+              },
+              /**
+               * Boolean to indicate whether there has been an error with
+               * the update
+               */
+              _updateError: {
+                  type: Boolean,
+                  computed: '_computeUpdateError(error)'
+              },
+              /** Boolean to indicate whether the email has been updated */
+              updated: {
+                  type: Boolean,
+                  value: false
+              },
+              /** Boolean to indicate whether the email is updating */
+              updating: {
+                  type: Boolean,
+                  value: false
+              },
+              /** Whether the form component is valid */
+              valid: {
+                  type: Boolean,
+                  computed: '_computeValidity(_validations.*)',
+                  notify: true
+              },
+              /** The validation status for each field in the form */
+              _validations: {
+                  type: Object,
+                  value: () => {
+                      return {
+                          _primaryConfirmation: false,
+                          _primaryUpdate: false
+                      }
+                  }
+              }
+          },
+          /**
+           * Clear all errors when the user begins submitting a field
+           * @param {Event} e The focus event from the text input
+           */
+          _clearErrors (e) {
+              this.set('errors.email', null);
+              this.set(`errors.${e.target.id}`, null);
+          },
+          /**
+           * Generate an array of error messages from the errors object
+           * @param {Object} errors
+           * @returns {Array}
+           */
+          _computedErrorMessages (errors) {
+              let messages = [];
+              if (!errors || !errors.base) {
+                  return messages;
+              }
+              for (let type in errors.base) {
+                  messages.push(errors.base[type]);
+              }
+              return messages.filter(message => {
+                  return message !== null && message !== undefined;
+              });
+          },
+          /**
+           * Return a boolean to indicate whether there is an update error
+           * @param {String} error
+           * @returns {Boolean}
+           */
+          _computeUpdateError (error) {
+              return error && error.length ? true : false;
+          },
+          /**
+           * Compute whether the input is invalid
+           * @param {Boolean} validation The validation for this field
+           * @param {String} property The text input value
+           * @returns {Boolean}
+           */
+          _inputInvalid (validation, property) {
+              let fieldSet = property && property.length ? true : false;
+              return fieldSet && !validation;
+          },
+          /**
+           * Compute whether the input is valid
+           * @param {Boolean} validation The validation for this field
+           * @param {String} property The text input value
+           * @returns {Boolean}
+           */
+          _inputValid (validation, property) {
+              return validation && property && property.length ? true : false;
+          },
+          /**
+           * Check whether the component is valid – there are no invalid fields
+           * @param {Object} validations Update from `validations` changes
+           * @returns {Boolean}
+           */
+          _computeValidity (validations) {
+              let valid = true;
+              if (!validations || !validations.base) {
+                  valid = false;
+              } else {
+                  for (let validation in validations.base) {
+                      if (!validations.base[validation]) {
+                          valid = false;
+                      }
+                  }
+              }
+              return valid;
+          },
+          /** Reset the component */
+          _reset () {
+              this.set('updated', false);
+              this.set('updating', false);
+              this.set('error', null);
+              this.set('_primaryUpdate', '');
+              this.set('_primaryConfirmation', '');
+              this.set('_secondaryUpdate', '');
+              this.set('errors.email', null);
+              this.set('errors', {});
+              this.set('_validations', {
+                  _primaryConfirmation: false,
+                  _primaryUpdate: false
+              });
+          },
+          /**
+           * Fire the event to the parent to update the email address
+           * @param {Event} e The submit event from the form
+           */
+          _updateEmail (e) {
+              e.preventDefault();
+              let payload = {
+                  primary: this._primaryUpdate
+              };
+              if (this._secondaryUpdate) {
+                  payload.secondary = this._secondaryUpdate
+              }
+              this.fire('update-email', payload);
+          },
+          /**
+           * Validate that the confirmation email address matches the primary
+           * address and is a valid email
+           * @param {Event} e The blur event from the input field
+           */
+          _validateConfirmation (e) {
+              this.debounce('validate-confirmation', () => {
+                  if (this._validateEmail(e)) {
+                      if (this._primaryUpdate === this._primaryConfirmation) {
+                          this.set('_validations._primaryConfirmation', true);
+                          this.set('errors.confirmation', null);
+                      } else {
+                          this.set('_validations._primaryConfirmation', false);
+                          this.set('errors.confirmation', 'The confirmation email does not match');
+                      }
+                  }
+              }, 500);
+          },
+          /**
+           * Validate that the new email is not the same as the current email
+           * @param {Event} e The blur event from the input field
+           */
+          _validatePrimaryUpdate (e) {
+              this.debounce('validate-primary-update', () => {
+                  let element = e.path[0];
+                  if (element.value === this.primaryEmail) {
+                      this.set('_validations._primaryUpdate', false);
+                      this.set('errors._primaryUpdate', 'Your new email cannot be the same as your old one');
+                  } else {
+                      this._validateEmail(e);
+                      this.set('errors._primaryUpdate', null);
+                  }
+              }, 500);
+          },
+          /**
+           * Validate secondary email with debouncer
+           * @param {Event} e The blur event from the input field
+           */
+          _validateSecondaryUpdate (e) {
+              this.debounce('validate-secondary-update', () => {
+                  this._validateEmail(e);
+              }, 500);
+          },
+          /**
+           * Validate the email address given
+           * @param {Event} e The blur event from the input field
+           * @returns {Boolean}
+           */
+          _validateEmail (e) {
+              let element = e.path[0],
+                  valid = false,
+                  required = element.required,
+                  value = element.value;
+              /**
+               * We only want to validate this field if it's required, or if
+               * a value has been set. If it's not required, then it doesn't
+               * matter whether the field is empty.
+               */
+              if (required || (value && value.length)) {
+                  /** Validation provided by the Kano behaviour */
+                  valid = this.validateEmail(value);
+              } else {
+                  /**
+                   * If it's not required and empty, then we should reset
+                   * the email error when responding to the change to avoid
+                   * persisting unclear error messages.
+                   */
+                  valid = true;
 
-      is: 'kwc-email-settings',
-
-      properties: {
-        prop1: {
-          type: String,
-          value: 'kwc-email-settings',
-        },
-      },
-
-    });
-  </script>
+              }
+              if (valid) {
+                  this.set('errors.email', null);
+                  this.set(`errors.${element.id}`, null);
+              }
+              this.set(`_validations.${element.id}`, valid);
+              return valid;
+          }
+      });
+    </script>
 </dom-module>

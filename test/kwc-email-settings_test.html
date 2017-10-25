@@ -1,30 +1,169 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, minimum-scale=1, initial-scale=1, user-scalable=yes">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, minimum-scale=1, initial-scale=1, user-scalable=yes">
 
-    <title>kwc-email-settings test</title>
+        <title>kwc-email-settings test</title>
 
-    <script src="../../webcomponentsjs/webcomponents-lite.js"></script>
-    <script src="../../web-component-tester/browser.js"></script>
+        <script src="../../webcomponentsjs/webcomponents-lite.js"></script>
+        <script src="../../web-component-tester/browser.js"></script>
 
-    <link rel="import" href="../kwc-email-settings.html">
-  </head>
-  <body>
-    <test-fixture id="basic">
-      <template>
-        <kwc-email-settings></kwc-email-settings>
-      </template>
-    </test-fixture>
+        <link rel="import" href="../kwc-email-settings.html">
+    </head>
+    <body>
+        <test-fixture id="basic">
+            <template>
+                <kwc-email-settings></kwc-email-settings>
+            </template>
+        </test-fixture>
 
-    <script>
-      suite('kwc-email-settings', function() {
-        test('instantiating the element works', function() {
-          var element = fixture('basic');
-          assert.equal(element.is, 'kwc-email-settings');
-        });
-      });
-    </script>
-  </body>
+        <script>
+            var basic,
+                invalidEmail = 'notAnEmail',
+                currentEmail = 'test@kano.me',
+                emailUpdate = 'test2@kano.me';
+
+            function validateComponent (component) {
+                let primaryUpdate = {
+                        id: '_primaryUpdate',
+                        value: emailUpdate
+                    },
+                    primaryConfirmation = {
+                        id: '_primaryConfirmation',
+                        value: emailUpdate
+                    },
+                    updateEvent = {
+                        path: [ primaryUpdate ]
+                    },
+                    confirmationEvent = {
+                        path: [ primaryConfirmation ]
+                    };
+                /** Set the values */
+                component.primaryEmail = currentEmail;
+                component._primaryUpdate = emailUpdate;
+                component._primaryConfirmation = emailUpdate;
+                /** Validate the events */
+                component._validatePrimaryUpdate(updateEvent);
+                component._validateConfirmation(confirmationEvent);
+            }
+
+            setup(function () {
+                basic = fixture('basic');
+            });
+
+            suite('Component defaults', function () {
+                test('instantiating the element works', function () {
+                    assert.equal(basic.is, 'kwc-email-settings');
+                });
+
+                test('the component should be invalid by default', function () {
+                    assert.equal(basic.valid, false);
+                });
+
+                test('the component should not be updated by default', function () {
+                    assert.equal(basic.updated, false);
+                });
+
+                test('the component should not be updating by default', function () {
+                    assert.equal(basic.updated, false);
+                });
+            });
+
+            suite('Component validations', function () {
+                test('the element fails an invalid email', function(done) {
+                    /**
+                     * Spoof the update event that would be sent to the key-up
+                     * listener.
+                     */
+                    let testEvent = {
+                        path: [
+                            {
+                                id: '_primaryUpdate',
+                                value: invalidEmail
+                            }
+                        ]
+                    }
+                    basic._validateEmail(testEvent);
+                    /** Use a timeout to take account of the debouncer */
+                    setTimeout(() => {
+                        assert.equal(basic._validations._primaryUpdate, false);
+                        assert.equal(basic.errors.email, 'Please enter a valid email address.');
+                        done();
+                    }, 500);
+                });
+
+                test('the component fails an updated email that is the same as the current email', function(done) {
+                    let testEvent = {
+                        path: [
+                            {
+                                id: '_primaryUpdate',
+                                value: currentEmail
+                            }
+                        ]
+                    };
+                    basic.primaryEmail = currentEmail;
+                    basic._validatePrimaryUpdate(testEvent);
+                    setTimeout(() => {
+                        assert.equal(basic._validations._primaryUpdate, false);
+                        assert.equal(basic.errors._primaryUpdate, 'Your new email cannot be the same as your old one');
+                        done();
+                    }, 500);
+                });
+
+                test('the component fails a confirmation email that is not the same as the updated email', function(done) {
+                    let testEvent = {
+                        path: [
+                            {
+                                id: '_primaryConfirmation',
+                                value: 'test3@kano.me'
+                            }
+                        ]
+                    };
+                    basic._primaryUpdate = emailUpdate;
+                    basic._validateConfirmation(testEvent);
+                    setTimeout(() => {
+                        assert.equal(basic._validations._primaryConfirmation, false);
+                        assert.equal(basic.errors.confirmation, 'The confirmation email does not match');
+                        done();
+                    }, 500);
+                });
+            });
+
+            suite('A valid component', function() {
+                let button;
+
+                setup(function () {
+                    button = Polymer.dom(basic.root).querySelector('kwc-button');
+                    validateComponent(basic);
+                });
+
+                test('when all fields are valid, the component will be valid', function(done) {
+                    setTimeout(() => {
+                        assert.equal(basic._validations._primaryUpdate, true);
+                        assert.equal(basic._validations._primaryConfirmation, true);
+                        assert.equal(basic.valid, true);
+                        done();
+                    }, 600);
+                });
+
+                test('when the component is valid, the button will be enabled', function(done) {
+                    setTimeout(() => {
+                        assert.equal(button.disabled, false);
+                        done();
+                    }, 600);
+                });
+
+                test('clicking the button should fire the "update-password" event', function(done) {
+                    setTimeout(() => {
+                        basic.addEventListener('update-email', (e) => {
+                            assert.equal(e.detail.primary, emailUpdate);
+                            done();
+                        })
+                        button.click();
+                    }, 600);
+                });
+            });
+        </script>
+    </body>
 </html>
