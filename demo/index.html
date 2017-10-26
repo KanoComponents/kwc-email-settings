@@ -22,7 +22,9 @@
             <demo-snippet>
                 <template is="dom-bind" id="demo">
                     <kwc-email-settings primary-email="[[primaryEmail]]"
-                                        on-update-email="updateEmail">
+                                        on-update-email="updateEmail"
+                                        updated="[[updated]]"
+                                        updating="[[updating]]">
                     </kwc-email-settings>
                 </template>
             </demo-snippet>
@@ -31,6 +33,11 @@
                     demo.primaryEmail = 'test@kano.me';
                     demo.updateEmail = function (e) {
                         demo.primaryEmail = e.detail.primary;
+                        demo.updating = true;
+                        window.setTimeout(() => {
+                            demo.updating = false;
+                            demo.updated = true;
+                        }, 1500);
                     }
                 });
             </script>

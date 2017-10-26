@@ -3,9 +3,11 @@
   "main": "kwc-email-settings.html",
   "dependencies": {
     "polymer": "Polymer/polymer#^1.9.0",
+    "kwc-style": "git@github.com:KanoComponents/kwc-style.git#v1.x",
     "kwc-button": "git@github.com:KanoComponents/kwc-button.git#v1.x",
     "kwc-behaviours": "git@github.com:KanoComponents/kwc-behaviours.git",
-    "paper-spinner": "^2.0.0"
+    "paper-spinner": "^2.0.0",
+    "iron-flex-layout": "^2.0.0"
   },
   "devDependencies": {
     "iron-component-page": "PolymerElements/iron-component-page#^1.0.0",
