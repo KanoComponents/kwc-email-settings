@@ -16,7 +16,9 @@ A small component to allow users to update their email addresses.
 <dom-module id="kwc-email-settings">
     <template>
         <style is="custom-style" include="input-text">
-        <style>
+            :root {
+                --paper-spinner-color: white;
+            }
             :host {
                 display: block;
             }
@@ -30,6 +32,7 @@ A small component to allow users to update their email addresses.
             :host p,
             :host li {
                 font-family: var(--font-body);
+                margin: 0;
             }
             :host > p {
                 color: var(--color-grey);
@@ -49,44 +52,37 @@ A small component to allow users to update their email addresses.
                 margin-bottom: 16px;
                 width: 100%;
             }
-            :host input[kwc-valid] {
+            :host input[valid] {
                 border-color: var(--color-grassland);
             }
-            :host input[kwc-invalid] {
+            :host input[invalid] {
                 border-color: var(--color-cinnabar);
             }
-            :host .errors {
-                @apply --layout-flex-auto;
-                color: var(--color-cinnabar);
-                list-style: none;
-                margin: 16px 0 32px 0;
-                min-height: 16px;
-                padding: 0;
+            :host .footer {
+                 @apply --layout-horizontal;
+                 @apply --layout-start-justified;
+                 @apply --layout--start;
             }
-            :host .error ~ .error {
-                margin-top: 8px;
-            }
-            :host .overlay {
-                @apply --layout-fit;
-                background-color: white;
-                margin: auto;
-                text-align: center;
-            }
-            :host .overlay-label {
-                color: var(--color-abbey);
-                font-size: 16px;
-                font-family: var(--font-body);
-                font-weight: bold;
-                margin: 0;
-                padding-bottom: 24px;
-            }
-            :host paper-spinner-lite {
-                display: block;
-                margin: auto;
-            }
-            :host *[hidden] {
-                display: none !important;
-            }
+            :host .messages {
+                 margin-left: 16px;
+             }
+             :host .errors {
+                 @apply --layout-flex-auto;
+                 list-style: none;
+                 margin: 0;
+                 min-height: 16px;
+                 padding: 0;
+             }
+             :host .message ~ .message {
+                 margin-top: 8px;
+             }
+             :host paper-spinner-lite {
+                 display: block;
+                 margin: auto;
+             }
+             :host *[hidden] {
+                 display: none !important;
+             }
         </style>
         <h3>Email Notifications</h3>
         <p>Your current email address is <strong>[[primaryEmail]]</strong></p>
@@ -98,8 +94,9 @@ A small component to allow users to update their email addresses.
                        on-focus="_clearErrors"
                        on-keyup="_validatePrimaryUpdate"
                        placeholder="Your new email"
-                       kwc-valid$="[[_inputValid(_validations._primaryUpdate, _primaryUpdate)]]"
-                       kwc-invalid$="[[_inputInvalid(_validations._primaryUpdate, _primaryUpdate)]]"
+                       valid$="[[_inputValid(_validations._primaryUpdate, _primaryUpdate)]]"
+                       invalid$="[[_inputInvalid(_validations._primaryUpdate, _primaryUpdate)]]"
+                       no-validation
                        required />
                 <input id="_primaryConfirmation"
                        type="email"
@@ -107,60 +104,57 @@ A small component to allow users to update their email addresses.
                        on-focus="_clearErrors"
                        on-keyup="_validateConfirmation"
                        placeholder="Please confirm your email"
-                       kwc-valid$="[[_inputValid(_validations._primaryConfirmation, _primaryConfirmation)]]"
-                       kwc-invalid$="[[_inputInvalid(_validations._primaryConfirmation, _primaryConfirmation)]]"
+                       valid$="[[_inputValid(_validations._primaryConfirmation, _primaryConfirmation)]]"
+                       invalid$="[[_inputInvalid(_validations._primaryConfirmation, _primaryConfirmation)]]"
+                       no-validation
                        required />
                 <input id="_secondaryUpdate"
                        type="email"
                        value="{{_secondaryUpdate::input}}"
                        on-focus="_clearErrors"
                        on-keyup="_validateSecondaryUpdate"
-                       kwc-valid$="[[_inputValid(_validations._secondaryUpdate, _secondaryUpdate)]]"
-                       kwc-invalid$="[[_inputInvalid(_validations._secondaryUpdate, _secondaryUpdate)]]"
+                       valid$="[[_inputValid(_validations._secondaryUpdate, _secondaryUpdate)]]"
+                       invalid$="[[_inputInvalid(_validations._secondaryUpdate, _secondaryUpdate)]]"
                        placeholder="Your secondary email (optional)"
+                       no-validation
                        hidden />
-                <ul class="errors">
-                     <template is="dom-repeat" items="[[_errorMessages]]">
-                        <li class="error">[[item]]</li>
-                     </template>
-                </ul>
-                <kwc-button disabled$="[[!valid]]"
-                            type="submit"
-                            variant="tertiary"
-                            square
-                            on-tap="_updateEmail">
-                    Update
-                </kwc-button>
-            </form>
-            <template is="dom-if" if="[[updating]]">
-                <div class="overlay loader">
-                    <p class="overlay-label">Loading...</p>
-                    <paper-spinner-lite active="[[updating]]">
-                    </paper-spinner-lite>
-                </div>
-            </template>
-            <template is="dom-if" if="[[_updateError]]">
-                <div class="overlay error">
-                    <p class="overlay-label">Sorry, something went wrong.</p>
-                    <kwc-button type="button"
-                                variant="primary"
-                                square
-                                on-tap="_reset">
-                        Try again
-                    </kwc-button>
-                </div>
-            </template>
-            <template is="dom-if" if="[[updated]]">
-                <div class="overlay success">
-                    <p class="overlay-label">Success! Please check your email to confirm the change.</p>
-                    <kwc-button type="button"
-                                variant="primary"
-                                square
-                                on-tap="_reset">
-                        Got it
-                    </kwc-button>
-                </div>
-            </template>
+                <div class="footer">
+                     <div class="actions">
+                          <kwc-button hidden$="[[!_displaySubmission]]"
+                                      disabled$="[[updating]]"
+                                      type="submit"
+                                      variant="tertiary"
+                                      square
+                                      on-tap="_updateEmail">
+                               <span hidden$="[[updating]]">Update</span>
+                               <paper-spinner-lite active="[[updating]]"></paper-spinner-lite>
+                           </kwc-button>
+                           <kwc-button type="button"
+                                       hidden$="[[!_displayError]]"
+                                       icon-id="kwc-ui-icons:close"
+                                       variant="warning"
+                                       square
+                                       on-tap="_reset">
+                           </kwc-button>
+                           <kwc-button type="button"
+                                       hidden$="[[!updated]]"
+                                       icon-id="kwc-ui-icons:tick"
+                                       variant="secondary"
+                                       square
+                                       on-tap="_reset">
+                           </kwc-button>
+                       </div>
+                       <div class="messages">
+                           <ul class="errors" hidden$="[[!_displayError]]">
+                               <template is="dom-repeat" items="[[_errorMessages]]">
+                                   <li class="error">[[item]]</li>
+                               </template>
+                           </ul>
+                           <p class="success message" hidden$="[[!updated]]">Success! Please check your email to confirm the change.</p>
+                           <p class="error message" hidden$="[[!_updateError]]">Sorry, something went wrong. Please try again.</p>
+                       </div>
+                  </div>
+             </div>
         </div>
     </template>
 
@@ -171,9 +165,26 @@ A small component to allow users to update their email addresses.
               Kano.Validation.Behaviour
           ],
           properties: {
+              /**
+               * Boolean to indicate whether errors should be
+               * displayed
+               */
+              _displayError: {
+                  type: Boolean,
+                  computed: '_computeErrorDisplay(errors.*, _updateError)'
+              },
+              /**
+               * Boolean to indicate whether the submit button should
+               * be displayed
+               */
+              _displaySubmission: {
+                  type: Boolean,
+                  computed: '_computeSubmissionDisplay(errors.*, _updateError, updated)'
+              },
               /** The update error (if applicable) */
               error: {
-                  type: String
+                  type: String,
+                  value: null
               },
               /** The errors for each field in the form */
               errors: {
@@ -250,6 +261,27 @@ A small component to allow users to update their email addresses.
               this.set('errors.email', null);
               this.set(`errors.${e.target.id}`, null);
           },
+            /**
+           * Compute whether the error should be displayed
+           * @param {Object} errors The `errors` update object
+           * @param {Boolean} _updateError
+           * @returns {Boolean}
+           */
+          _computeErrorDisplay(errors, _updateError) {
+              let display = false;
+              if (_updateError) {
+                  display = true;
+                  return display;
+              }
+              if (errors && errors.base) {
+                  for (let type in errors.base) {
+                      if (errors.base[type]) {
+                          display = true;
+                      }
+                  }
+              }
+              return display;
+          },
           /**
            * Generate an array of error messages from the errors object
            * @param {Object} errors
@@ -266,6 +298,28 @@ A small component to allow users to update their email addresses.
               return messages.filter(message => {
                   return message !== null && message !== undefined;
               });
+          },
+          /**
+           * Compute whether the submission button should be displayed
+           * @param {Object} errors The `errors` update object
+           * @param {Boolean} _updateError
+           * @param {Boolean} updated
+           * @returns {Boolean}
+           */
+          _computeSubmissionDisplay (errors, _updateError, updated) {
+              let display = true;
+              if (_updateError || updated) {
+                   display = false;
+                   return display;
+              }
+              if (errors && errors.base) {
+                  for (let type in errors.base) {
+                      if (errors.base[type]) {
+                          display = false;
+                      }
+                  }
+              }
+              return display;
           },
           /**
            * Return a boolean to indicate whether there is an update error
@@ -366,7 +420,7 @@ A small component to allow users to update their email addresses.
           _validatePrimaryUpdate (e) {
               this.debounce('validate-primary-update', () => {
                   let element = e.path[0];
-                  if (element.value === this.primaryEmail) {
+                  if (element.value.toLowerCase() === this.primaryEmail.toLowerCase()) {
                       this.set('_validations._primaryUpdate', false);
                       this.set('errors._primaryUpdate', 'Your new email cannot be the same as your old one');
                   } else {

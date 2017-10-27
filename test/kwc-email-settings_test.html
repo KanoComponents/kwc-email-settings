@@ -134,7 +134,7 @@
                 let button;
 
                 setup(function () {
-                    button = Polymer.dom(basic.root).querySelector('kwc-button');
+                    button = Polymer.dom(basic.root).querySelector('kwc-button[type="submit"]');
                     validateComponent(basic);
                 });
 
@@ -143,13 +143,6 @@
                         assert.equal(basic._validations._primaryUpdate, true);
                         assert.equal(basic._validations._primaryConfirmation, true);
                         assert.equal(basic.valid, true);
-                        done();
-                    }, 600);
-                });
-
-                test('when the component is valid, the button will be enabled', function(done) {
-                    setTimeout(() => {
-                        assert.equal(button.disabled, false);
                         done();
                     }, 600);
                 });
