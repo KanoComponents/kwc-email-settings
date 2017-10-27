@@ -70,7 +70,6 @@ A small component to allow users to update their email addresses.
                  @apply --layout-flex-auto;
                  list-style: none;
                  margin: 0;
-                 min-height: 16px;
                  padding: 0;
              }
              :host .message ~ .message {
@@ -121,7 +120,7 @@ A small component to allow users to update their email addresses.
                 <div class="footer">
                      <div class="actions">
                           <kwc-button hidden$="[[!_displaySubmission]]"
-                                      disabled$="[[updating]]"
+                                      disabled$="[[!_submissionEnabled]]"
                                       type="submit"
                                       variant="tertiary"
                                       square
@@ -217,6 +216,14 @@ A small component to allow users to update their email addresses.
               _secondaryUpdate: {
                   type: String,
                   value: ''
+              },
+              /**
+               * Boolean to indicate whether the submission button should
+               * be enabled
+               */
+              _submissionEnabled: {
+                  type: Boolean,
+                  computed: '_computeSubmissionEnabled(valid, updating)'
               },
               /**
                * Boolean to indicate whether there has been an error with
@@ -322,6 +329,15 @@ A small component to allow users to update their email addresses.
               return display;
           },
           /**
+           * Compute whether the submision button should be enabled
+           * @param {Boolean} changes
+           * @param {Boolean} updating
+           * @retuns {Boolean}
+           */
+          _computeSubmissionEnabled (changes, updating) {
+              return changes && !updating;
+          },
+          /**
            * Return a boolean to indicate whether there is an update error
            * @param {String} error
            * @returns {Boolean}
@@ -387,13 +403,15 @@ A small component to allow users to update their email addresses.
            */
           _updateEmail (e) {
               e.preventDefault();
-              let payload = {
-                  primary: this._primaryUpdate
+              if (this.valid) {
+                  let payload = {
+                       primary: this._primaryUpdate
+                  };
+                  if (this._secondaryUpdate) {
+                     payload.secondary = this._secondaryUpdate
+                  }
+                  this.fire('update-email', payload)
               };
-              if (this._secondaryUpdate) {
-                  payload.secondary = this._secondaryUpdate
-              }
-              this.fire('update-email', payload);
           },
           /**
            * Validate that the confirmation email address matches the primary
