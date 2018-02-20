@@ -420,7 +420,7 @@ A small component to allow users to update their email addresses.
            */
           _validateConfirmation (e) {
               this.debounce('validate-confirmation', () => {
-                  if (this._validateEmail(e)) {
+                  if (this._validateEmail(e, '#_primaryConfirmation')) {
                       if (this._primaryUpdate === this._primaryConfirmation) {
                           this.set('_validations._primaryConfirmation', true);
                           this.set('errors.confirmation', null);
@@ -437,12 +437,12 @@ A small component to allow users to update their email addresses.
            */
           _validatePrimaryUpdate (e) {
               this.debounce('validate-primary-update', () => {
-                  let element = e.path[0];
+                  let element = this.setElement(e, '#_primaryUpdate');
                   if (element.value.toLowerCase() === this.primaryEmail.toLowerCase()) {
                       this.set('_validations._primaryUpdate', false);
                       this.set('errors._primaryUpdate', 'Your new email cannot be the same as your old one');
                   } else {
-                      this._validateEmail(e);
+                      this._validateEmail(e, '#_primaryUpdate');
                       this.set('errors._primaryUpdate', null);
                   }
               }, 500);
@@ -453,7 +453,7 @@ A small component to allow users to update their email addresses.
            */
           _validateSecondaryUpdate (e) {
               this.debounce('validate-secondary-update', () => {
-                  this._validateEmail(e);
+                  this._validateEmail(e, '#_secondaryUpdate');
               }, 500);
           },
           /**
@@ -461,8 +461,8 @@ A small component to allow users to update their email addresses.
            * @param {Event} e The blur event from the input field
            * @returns {Boolean}
            */
-          _validateEmail (e) {
-              let element = e.path[0],
+          _validateEmail (e, inputId) {
+              let element = this.setElement(e, inputId),
                   valid = false,
                   required = element.required,
                   value = element.value;
@@ -489,6 +489,19 @@ A small component to allow users to update their email addresses.
               }
               this.set(`_validations.${element.id}`, valid);
               return valid;
+          },
+          /**
+           * Set validation element (Path only exists in Chrome)
+           * @param {Event} e The blur event from the input field
+           * @param {Event} inputId The selected input element id
+           * @returns {Element}
+           */
+          setElement (e, inputId) {
+              if (e.path) {
+                   return e.path[0];
+              } else {
+                   return Polymer.dom(this.root).querySelector(inputId);
+              }
           }
       });
     </script>
